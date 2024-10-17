@@ -17,8 +17,8 @@ During the review process, contracts goes through the following procedures:
 1. The tests coverage is poor. Consider increasing at it at least to 85%.
 2. Floating pragma in contracts.
 3. Consider use exact imports over the wildcard imports.
-4. Using errors in require statements rather than error codes.
-5. `SaleNFT` uses `ITaexNFT` interface to interact with `TaexNFT` and `TaexNFT1155`. However interface is not inhereted by the NFT contracts.
+4. Using custom errors in require statements rather than error strings.
+5. `SaleNFT` uses `ITaexNFT` interface to interact with `TaexNFT` and `TaexNFT1155`. However interface is not inherited by the NFT contracts.
  
 ### Security assumptions
 
