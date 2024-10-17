@@ -6,13 +6,20 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface ITaexNFT {
     function isListedForSale(uint256) external view returns (bool);
+
     function tokenPrice(uint256) external view returns (uint256);
+
     function ownerOfToken(uint256) external view returns (address);
+
     function tokenPrimaryArtistFee(uint256) external view returns (uint256);
+
     function tokenSecondaryArtistFee(uint256) external view returns (uint256);
+
     function tokenSecondaryTaexFee(uint256) external view returns (uint256);
+
     function transferFrom(address from, address to, uint256 tokenId) external;
 }
+
 contract SaleNFT is Ownable, ReentrancyGuard {
     address public artistTreasury;
     address public taexTreasury;
@@ -65,12 +72,15 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         );
 
         // Ensure the sent amount is at least the price
-        require(msg.value >= price, "SaleNFT: Insufficient Amount to sale NFT");
+        require(msg.value >= price, "SaleNFT: Insufficient Amount to sale NFT"); // @audit what happens with the access ?
 
         // Transfer the NFT to the buyer
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
         // Verify transfer was successful
-        require(ITaexNFT(_taexNFT).ownerOfToken(_tokenId) == msg.sender, "SaleNFT: NFT transfer failed");
+        require(
+            ITaexNFT(_taexNFT).ownerOfToken(_tokenId) == msg.sender,
+            "SaleNFT: NFT transfer failed"
+        );
 
         // Calculate the sale fee
         uint256 primaryArtistFeeAmount = (price * primaryArtistFee) / 100;
@@ -122,7 +132,10 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         // Transfer the NFT to the buyer
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
         // Verify transfer was successful
-        require(ITaexNFT(_taexNFT).ownerOfToken(_tokenId) == msg.sender, "SaleNFT: NFT transfer failed");
+        require(
+            ITaexNFT(_taexNFT).ownerOfToken(_tokenId) == msg.sender,
+            "SaleNFT: NFT transfer failed"
+        );
 
         uint256 secondaryArtistFee = ITaexNFT(_taexNFT).tokenSecondaryArtistFee(
             _tokenId
@@ -185,7 +198,9 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         address _artistTreasury
     ) external isNotZeroAddress(_artistTreasury) onlyOwner {
         artistTreasury = _artistTreasury;
+        // @audit event should be here
     }
+
     /**
      * @dev External function to set Taex treasury address only by admin
      */
@@ -193,5 +208,6 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         address _taexTreasury
     ) external isNotZeroAddress(_taexTreasury) onlyOwner {
         taexTreasury = _taexTreasury;
+        // @audit event should be here
     }
 }

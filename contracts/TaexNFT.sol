@@ -9,17 +9,17 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
     uint256 private _lastTokenId;
 
     string public internalBaseURI;
-    mapping(uint256 => bool) public isListedForSale;
-    mapping(uint256 => uint256) public tokenPrice;
+    mapping(uint256 => bool) public isListedForSale; // @audit to struct
+    mapping(uint256 => uint256) public tokenPrice; // @audit to struct
     uint256 public primaryPrice;
 
-    uint256 public primaryArtistFee;
-    uint256 public secondaryArtistFee;
-    uint256 public secondaryTaexFee;
+    uint256 public primaryArtistFee; // @audit can be immutable
+    uint256 public secondaryArtistFee; // @audit can be immutable
+    uint256 public secondaryTaexFee; // @audit can be immutable
 
-    mapping(uint256 => uint256) public tokenPrimaryArtistFee;
-    mapping(uint256 => uint256) public tokenSecondaryArtistFee;
-    mapping(uint256 => uint256) public tokenSecondaryTaexFee;
+    mapping(uint256 => uint256) public tokenPrimaryArtistFee; // @audit to struct
+    mapping(uint256 => uint256) public tokenSecondaryArtistFee; // @audit to struct
+    mapping(uint256 => uint256) public tokenSecondaryTaexFee; // @audit to struct
 
     modifier isNotZeroAddress(address _address) {
         require(_address != address(0), "TaexNFT: zero address");
@@ -96,6 +96,7 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
      */
     function setBaseURI(string calldata newBaseUri) external onlyOwner {
         internalBaseURI = newBaseUri;
+        // @audit should have an event
     }
 
     /**
@@ -105,6 +106,7 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
         uint256 _price
     ) external isNotZero(_price) onlyOwner {
         primaryPrice = _price;
+        // @audit should have an event
     }
 
     function _mintTaex(

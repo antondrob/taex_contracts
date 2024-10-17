@@ -15,13 +15,13 @@ contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard {
     mapping(uint256 => address) private _owners;
 
     string public internalBaseURI;
-    mapping(uint256 => bool) public isListedForSale;
-    mapping(uint256 => uint256) public tokenPrice;
+    mapping(uint256 => bool) public isListedForSale; // group to struct
+    mapping(uint256 => uint256) public tokenPrice; // group to struct
     uint256 public primaryPrice;
 
-    uint256 public primaryArtistFee;
-    uint256 public secondaryArtistFee;
-    uint256 public secondaryTaexFee;
+    uint256 public primaryArtistFee; // @audit can be immutable
+    uint256 public secondaryArtistFee; // @audit can be immutable
+    uint256 public secondaryTaexFee; // @audit can be immutable
 
     mapping(uint256 => uint256) public tokenPrimaryArtistFee;
     mapping(uint256 => uint256) public tokenSecondaryArtistFee;
