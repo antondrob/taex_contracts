@@ -49,8 +49,8 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         address _artistTreasury,
         address _taexTreasury
     )
-        isNotZeroAddress(_artistTreasury)
-        isNotZeroAddress(_taexTreasury)
+        isNotZeroAddress(_artistTreasury) // @audit likely redundant
+        isNotZeroAddress(_taexTreasury) // @audit likely redundant
         Ownable(msg.sender)
     {
         artistTreasury = _artistTreasury;
