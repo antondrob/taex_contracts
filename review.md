@@ -102,7 +102,7 @@ Consider using the fixed version of Solidity, rather than floating
 -    require(owner != address(0), "SaleNFT: zero address");
 ...
 +    error SaleNFT_ZeroAddress();
-+    require(owner != address(0), "SaleNFT: zero address");
++    require(owner != address(0), SaleNFT_ZeroAddress());
 ```
 
 #### 5. `TaexNFT` and `TaexNFT1155` should implement the `ITaexNFT` interface
