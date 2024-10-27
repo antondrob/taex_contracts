@@ -2,10 +2,11 @@
 pragma solidity 0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
 
-contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
+contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
     uint256 private _lastTokenId;
 
     string public internalBaseURI;
@@ -19,18 +20,6 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
     }
 
     mapping(uint256 => TokenData) public tokenData;
-
-    event TokenListedForSale(uint256 tokenId, uint256 price);
-    event TokenUnlistedFromSale(uint256 tokenId);
-    event TokenPriceAdjusted(uint256 tokenId, uint256 price);
-    event TokenMinted(address indexed to, uint256 tokenId);
-    event SetBaseURI(string);
-    event SetDefaultData(uint256, uint8, uint8, uint8);
-
-    error ZeroAddress();
-    error ZeroAmount();
-    error NotOwnerOfTokenId();
-    error InvalidFeePercentage();
 
     modifier isNotZeroAddress(address _address) {
         if (_address == address(0)) revert ZeroAddress();
@@ -71,6 +60,14 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
 
     function ownerOfToken(uint256 _tokenId) external view returns (address) {
         return ownerOf(_tokenId);
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override(ITaexNFT, ERC721) {
+        ERC721.transferFrom(from, to, tokenId);
     }
 
     /**
@@ -176,6 +173,7 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
 
     /**
      * @dev External function to set new Base URI only by admin
+     * @param newBaseUri New base URI.
      */
     function setBaseURI(string calldata newBaseUri) external onlyOwner {
         internalBaseURI = newBaseUri;
@@ -184,6 +182,10 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard {
 
     /**
      * @dev External function to set primary price only by admin
+     * @param _price New primary price.
+     * @param _primaryArtistFee New primary artist fee.
+     * @param _secondaryArtistFee New secondary artist fee.
+     * @param _secondaryTaexFee New secondary taex fee.
      */
     function setDefaultData(
         uint256 _price,

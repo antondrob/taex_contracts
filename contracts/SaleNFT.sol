@@ -2,24 +2,8 @@
 pragma solidity 0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-interface ITaexNFT {
-    function tokenData(
-        uint256 tokenId
-    )
-        external
-        view
-        returns (
-            bool isListedForSale,
-            uint8 primaryArtistFee,
-            uint8 secondaryArtistFee,
-            uint8 secondaryTaexFee,
-            uint256 price
-        );
-    function ownerOfToken(uint256 tokenId) external view returns (address);
-    function transferFrom(address from, address to, uint256 tokenId) external;
-}
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
 
 contract SaleNFT is Ownable, ReentrancyGuard {
     address public artistTreasury;
@@ -59,6 +43,7 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         _;
     }
 
+    // @audit not used
     modifier isNotZero(uint256 _amount) {
         if (_amount == 0) revert ZeroAmount();
         _;
@@ -87,6 +72,7 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         // Transfer NFT to buyer
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
 
+        // @audit redundant check
         if (ITaexNFT(_taexNFT).ownerOfToken(_tokenId) != msg.sender) {
             revert TransferNFTFailed();
         }

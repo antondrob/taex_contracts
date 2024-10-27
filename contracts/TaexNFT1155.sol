@@ -2,12 +2,13 @@
 pragma solidity 0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/utils/Arrays.sol";
+import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Arrays} from "@openzeppelin/contracts/utils/Arrays.sol";
+import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
 
-contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard {
+contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
     using Strings for uint256;
     using Arrays for uint256[];
 
@@ -26,18 +27,6 @@ contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard {
     }
 
     mapping(uint256 => TokenData) public tokenData;
-
-    event TokenListedForSale(uint256 tokenId, uint256 price);
-    event TokenUnlistedFromSale(uint256 tokenId);
-    event TokenPriceAdjusted(uint256 tokenId, uint256 price);
-    event TokenMinted(address indexed to, uint256 tokenId);
-    event SetBaseURI(string);
-    event SetDefaultData(uint256, uint8, uint8, uint8);
-
-    error ZeroAddress();
-    error ZeroAmount();
-    error NotOwnerOfTokenId();
-    error InvalidFeePercentage();
 
     modifier isNotZeroAddress(address _address) {
         if (_address == address(0)) revert ZeroAddress();
