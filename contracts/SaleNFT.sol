@@ -4,43 +4,16 @@ pragma solidity ^0.8.20; // Ensure you're using the latest compatible version
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
+import {ISaleNFT} from "./interfaces/ISaleNFT.sol";
 
 /**
  * @title SaleNFT
  * @dev Contract for handling the sale of NFTs, including primary and secondary sales.
  */
-contract SaleNFT is Ownable, ReentrancyGuard {
+contract SaleNFT is Ownable, ReentrancyGuard, ISaleNFT {
     address public artistTreasury;
     address public taexTreasury;
     mapping(address => bool) public whitelist;
-
-    event PrimarySale(
-        address indexed nft,
-        uint256 indexed tokenId,
-        address indexed to
-    );
-    event SecondarySale(
-        address indexed nft,
-        uint256 indexed tokenId,
-        address indexed to
-    );
-    event ETHWithdrawn(address indexed to, uint256 amount);
-    event SetArtistTreasury(address indexed treasury);
-    event SetTaexTreasury(address indexed treasury);
-    event AddToWhitelist(address indexed nftContract);
-    event RemoveFromWhitelist(address indexed nftContract);
-
-    error InvalidTokenId();
-    error ZeroAmount();
-    error InsufficientAmount();
-    error TransferNFTFailed();
-    error TransferETHToArtistFailed();
-    error TransferETHToTaexFailed();
-    error TransferETHToOwnerFailed();
-    error TransferETHToWithdrawFailed();
-    error NotListedForSale();
-    error NoExistETHTowithdraw();
-    error NotWhitelistedNFT();
 
     modifier onlyWhitelisted(address _taexNFT) {
         if (!whitelist[_taexNFT]) revert NotWhitelistedNFT();
@@ -69,13 +42,13 @@ contract SaleNFT is Ownable, ReentrancyGuard {
             .tokenData(_tokenId);
         address owner = ITaexNFT(_taexNFT).ownerOfToken(_tokenId);
 
-        if (owner == address(0)) revert InvalidTokenId(); // Validate owner
         if (msg.value < price) revert InsufficientAmount(); // Validate payment
 
         // Transfer NFT to buyer
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
 
         if (ITaexNFT(_taexNFT).ownerOfToken(_tokenId) != msg.sender) {
+            // TODO likely unneeded check if the transferFrom function is implemented correctly
             revert TransferNFTFailed();
         }
 
@@ -83,19 +56,18 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         uint256 artistFeeAmount = (price * primaryArtistFee) / 100;
 
         // Pay artist treasury
-        if (artistFeeAmount > 0) {
-            (bool successArtist, ) = payable(artistTreasury).call{
-                value: artistFeeAmount
-            }("");
-            if (!successArtist) revert TransferETHToArtistFailed();
-        }
+        _transferNativeWithError(
+            artistTreasury,
+            artistFeeAmount,
+            ISaleNFT.TransferETHToArtistFailed.selector
+        );
 
         // Pay Taex treasury
-        (bool successTaex, ) = payable(taexTreasury).call{
-            value: price - artistFeeAmount
-        }("");
-        if (!successTaex) revert TransferETHToTaexFailed();
-
+        _transferNativeWithError(
+            taexTreasury,
+            price - artistFeeAmount,
+            ISaleNFT.TransferETHToTaexFailed.selector
+        );
         // Refund excess ETH if sent more than required
         if (msg.value > price) {
             payable(msg.sender).transfer(msg.value - price);
@@ -123,7 +95,6 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         ) = ITaexNFT(_taexNFT).tokenData(_tokenId);
         address owner = ITaexNFT(_taexNFT).ownerOfToken(_tokenId);
 
-        if (owner == address(0)) revert InvalidTokenId(); // Validate owner
         if (!isListed) revert NotListedForSale(); // Ensure token is listed for sale
         if (msg.value < price) revert InsufficientAmount(); // Validate payment
 
@@ -131,6 +102,7 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
 
         if (ITaexNFT(_taexNFT).ownerOfToken(_tokenId) != msg.sender) {
+            // TODO check is not needed if the transferFrom function is implemented correctly
             revert TransferNFTFailed();
         }
 
@@ -139,26 +111,25 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         uint256 taexFeeAmount = (price * secondaryTaexFee) / 100;
 
         // Pay seller (owner)
-        (bool successOwner, ) = payable(owner).call{
-            value: price - artistFeeAmount - taexFeeAmount
-        }("");
-        if (!successOwner) revert TransferETHToOwnerFailed();
+        _transferNativeWithError(
+            owner,
+            (price - artistFeeAmount - taexFeeAmount),
+            ISaleNFT.TransferETHToOwnerFailed.selector
+        );
 
         // Pay artist treasury
-        if (artistFeeAmount > 0) {
-            (bool successArtist, ) = payable(artistTreasury).call{
-                value: artistFeeAmount
-            }("");
-            if (!successArtist) revert TransferETHToArtistFailed();
-        }
+        _transferNativeWithError(
+            artistTreasury,
+            artistFeeAmount,
+            ISaleNFT.TransferETHToArtistFailed.selector
+        );
 
         // Pay Taex treasury
-        if (taexFeeAmount > 0) {
-            (bool successTaex, ) = payable(taexTreasury).call{
-                value: taexFeeAmount
-            }("");
-            if (!successTaex) revert TransferETHToTaexFailed();
-        }
+        _transferNativeWithError(
+            taexTreasury,
+            taexFeeAmount,
+            ISaleNFT.TransferETHToTaexFailed.selector
+        );
 
         // Refund excess ETH if sent more than required
         if (msg.value > price) {
@@ -176,8 +147,11 @@ contract SaleNFT is Ownable, ReentrancyGuard {
         uint256 balance = address(this).balance;
         if (balance == 0) revert NoExistETHTowithdraw();
 
-        (bool success, ) = payable(to).call{value: balance}("");
-        if (!success) revert TransferETHToWithdrawFailed();
+        _transferNativeWithError(
+            to,
+            balance,
+            ISaleNFT.TransferETHToWithdrawFailed.selector
+        );
 
         emit ETHWithdrawn(to, balance);
     }
@@ -216,5 +190,31 @@ contract SaleNFT is Ownable, ReentrancyGuard {
     function removeFromWhitelist(address _contract) external onlyOwner {
         whitelist[_contract] = false;
         emit RemoveFromWhitelist(_contract);
+    }
+
+    function _handleNativeTransfers(
+        address[] memory _to,
+        uint256[] memory _amount,
+        bytes4[] memory _errorSelector
+    ) internal {
+        for (uint256 i = 0; i < _to.length; i++) {
+            _transferNativeWithError(_to[i], _amount[i], _errorSelector[i]);
+        }
+    }
+
+    function _transferNativeWithError(
+        address _to,
+        uint256 _amount,
+        bytes4 _errorSelector
+    ) internal {
+        if (_amount > 0) {
+            (bool success, ) = payable(_to).call{value: _amount}("");
+            if (!success) {
+                assembly {
+                    mstore(0, _errorSelector)
+                    revert(0, 0x04)
+                }
+            }
+        }
     }
 }

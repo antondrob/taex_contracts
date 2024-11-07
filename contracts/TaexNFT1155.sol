@@ -13,13 +13,19 @@ import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
  * @dev Implementation of an ERC1155 NFT contract for managing token sales and fees.
  */
 contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
+    /// TODO natspec
     using Strings for uint256;
+    /// TODO natspec
     using Arrays for uint256[];
 
+    /// TODO natspec
     uint256 private _lastTokenId;
+    /// TODO natspec
     mapping(uint256 => address) private _owners;
     string public internalBaseURI;
+    /// TODO natspec
 
+    /// TODO natspec
     struct TokenData {
         bool isListedForSale; // 1 byte
         uint8 primaryArtistFee; // 1 byte (0-100%)
@@ -28,6 +34,7 @@ contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
         uint256 price; // 32 bytes
     }
 
+    /// TODO natspec
     mapping(uint256 => TokenData) public tokenData;
 
     modifier isNotZeroAddress(address _address) {
@@ -74,9 +81,11 @@ contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
         return _owners[_tokenId];
     }
 
+    // TODO
     function transferFrom(address from, address to, uint256 tokenId) external {
         safeTransferFrom(from, to, tokenId, 1, "");
     }
+
     /**
      * @dev Lists an NFT for sale.
      * @param _tokenId The ID of the token to list
@@ -146,6 +155,7 @@ contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
             _owners[id] = to;
         }
     }
+
     /**
      * @dev Internal function to mint a new NFT.
      * @param to The address to mint the token to

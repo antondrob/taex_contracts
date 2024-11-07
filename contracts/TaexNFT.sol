@@ -11,9 +11,12 @@ import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
  * @dev Implementation of an ERC721 NFT contract with fee management.
  */
 contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
+    /// TODO natspec
     uint256 private _lastTokenId; // Last minted token ID
+    /// TODO natspec
     string public internalBaseURI; // Base URI for metadata
 
+    /// TODO natspec
     struct TokenData {
         bool isListedForSale; // Indicates if the token is listed for sale
         uint8 primaryArtistFee; // Primary artist fee percentage
@@ -22,7 +25,8 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
         uint256 price; // Sale price of the token
     }
 
-    mapping(uint256 => TokenData) public tokenData; // Mapping of token ID to its data
+    /// Mapping of token ID to its data
+    mapping(uint256 => TokenData) public tokenData;
 
     modifier isNotZeroAddress(address _address) {
         require(_address != address(0), "Zero address not allowed");
