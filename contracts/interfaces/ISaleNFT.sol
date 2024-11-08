@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.25;
 
 interface ISaleNFT {
     function primarySale(address _taexNFT, uint256 _tokenId) external payable;

@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.25;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import {ReentrancyGuardTransientUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
 
 /**
  * @title TaexNFT
  * @dev Implementation of an ERC721 NFT contract with fee management.
  */
-contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
+contract TaexNFT is
+    ERC721Upgradeable,
+    OwnableUpgradeable,
+    ReentrancyGuardTransientUpgradeable,
+    ITaexNFT
+{
     /// TODO natspec
     uint256 private _lastTokenId; // Last minted token ID
     /// TODO natspec
@@ -43,6 +48,11 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @dev Constructor to initialize the NFT contract with name, symbol, and fee settings.
      * @param _name Name of the NFT contract
@@ -53,7 +63,7 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
      * @param _secondaryArtistFee Secondary artist fee percentage
      * @param _secondaryTaexFee Secondary Taex fee percentage
      */
-    constructor(
+    function initialize(
         string memory _name,
         string memory _symbol,
         string memory _uri,
@@ -62,12 +72,15 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
         uint8 _secondaryArtistFee,
         uint8 _secondaryTaexFee
     )
+        public
+        initializer
         isNotZero(_primaryPrice)
         isValidFeePercentage(_primaryArtistFee)
         isValidFeePercentage(_secondaryArtistFee + _secondaryTaexFee)
-        ERC721(_name, _symbol)
-        Ownable(msg.sender)
     {
+        __ERC721_init(_name, _symbol);
+        __Ownable_init(msg.sender);
+
         internalBaseURI = _uri;
         tokenData[0].price = _primaryPrice; // Default primary price for future tokens
         tokenData[0].primaryArtistFee = _primaryArtistFee;
@@ -91,8 +104,8 @@ contract TaexNFT is ERC721, Ownable, ReentrancyGuard, ITaexNFT {
         address from,
         address to,
         uint256 tokenId
-    ) public override(ITaexNFT, ERC721) {
-        ERC721.transferFrom(from, to, tokenId);
+    ) public override(ITaexNFT, ERC721Upgradeable) {
+        ERC721Upgradeable.transferFrom(from, to, tokenId);
     }
 
     /**

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20; // Ensure you're using the latest compatible version
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ReentrancyGuardTransientUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
 import {ISaleNFT} from "./interfaces/ISaleNFT.sol";
 
@@ -10,7 +10,11 @@ import {ISaleNFT} from "./interfaces/ISaleNFT.sol";
  * @title SaleNFT
  * @dev Contract for handling the sale of NFTs, including primary and secondary sales.
  */
-contract SaleNFT is Ownable, ReentrancyGuard, ISaleNFT {
+contract SaleNFT is
+    OwnableUpgradeable,
+    ReentrancyGuardTransientUpgradeable,
+    ISaleNFT
+{
     address public artistTreasury;
     address public taexTreasury;
     mapping(address => bool) public whitelist;
@@ -20,10 +24,16 @@ contract SaleNFT is Ownable, ReentrancyGuard, ISaleNFT {
         _;
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address _artistTreasury,
         address _taexTreasury
-    ) Ownable(msg.sender) {
+    ) public initializer {
+        __Ownable_init(msg.sender);
         artistTreasury = _artistTreasury;
         taexTreasury = _taexTreasury;
     }

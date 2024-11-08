@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.25;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {ReentrancyGuardTransientUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Arrays} from "@openzeppelin/contracts/utils/Arrays.sol";
 import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
@@ -12,7 +12,12 @@ import {ITaexNFT} from "./interfaces/ITaexNFT.sol";
  * @title TaexNFT1155
  * @dev Implementation of an ERC1155 NFT contract for managing token sales and fees.
  */
-contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
+contract TaexNFT1155 is
+    ERC1155Upgradeable,
+    OwnableUpgradeable,
+    ReentrancyGuardTransientUpgradeable,
+    ITaexNFT
+{
     /// TODO natspec
     using Strings for uint256;
     /// TODO natspec
@@ -52,19 +57,27 @@ contract TaexNFT1155 is ERC1155, Ownable, ReentrancyGuard, ITaexNFT {
         _;
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         string memory _uri,
         uint256 _primaryPrice,
         uint8 _primaryArtistFee,
         uint8 _secondaryArtistFee,
         uint8 _secondaryTaexFee
     )
+        public
+        initializer
         isNotZero(_primaryPrice)
         isValidFeePercentage(_primaryArtistFee)
         isValidFeePercentage(_secondaryArtistFee + _secondaryTaexFee)
-        ERC1155(_uri)
-        Ownable(msg.sender)
     {
+        __ERC1155_init(_uri);
+        __Ownable_init(msg.sender);
+
         internalBaseURI = _uri;
         tokenData[0].price = _primaryPrice; // Default primary price
         tokenData[0].primaryArtistFee = _primaryArtistFee;
