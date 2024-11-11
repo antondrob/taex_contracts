@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const { ethers, upgrades } = require("hardhat");
 
 describe("TaexNFT1155", function () {
   let TaexNFT1155;
@@ -10,13 +11,13 @@ describe("TaexNFT1155", function () {
     TaexNFT1155 = await ethers.getContractFactory("TaexNFT1155");
 
     [owner, user1, user2] = await ethers.getSigners();
-    taexNFT1155 = await TaexNFT1155.connect(owner).deploy(
-      "ipfs://",
-      ethers.parseEther("0.1"), // 0.1 ETH
-      85,
-      10,
-      10
-    );
+    taexNFT1155 = await upgrades.deployProxy(TaexNFT1155,
+      ["ipfs://",
+        ethers.parseEther("0.1"), // 0.1 ETH
+        85,
+        10,
+        10
+      ]);
   });
 
   it("should initialize correctly", async function () {

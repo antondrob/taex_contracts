@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { FixedNumber } = require("ethers");
 const BigNumber = require("bignumber.js");
+const { ethers, upgrades } = require("hardhat");
 
 describe("SaleNFT", function () {
   let SaleNFT;
@@ -22,27 +23,30 @@ describe("SaleNFT", function () {
 
     [owner, buyer, user2, artistTreasury, taexTreasury] =
       await ethers.getSigners();
-    saleNFT = await SaleNFT.connect(owner).deploy(artistTreasury, taexTreasury);
+    saleNFT = await upgrades.deployProxy(SaleNFT, [
+      artistTreasury.address,
+      taexTreasury.address,
+    ]);
 
     TaexNFT = await ethers.getContractFactory("TaexNFT");
-    taexNFT = await TaexNFT.connect(owner).deploy(
+    taexNFT = await upgrades.deployProxy(TaexNFT, [
       "Test NFT",
       "TNFT",
       "ipfs://",
       primaryPrice,
       primaryArtistFee,
       secondaryArtistFee,
-      secondaryTaexFee
-    );
+      secondaryTaexFee,
+    ]);
 
     TaexNFT1155 = await ethers.getContractFactory("TaexNFT1155");
-    taexNFT1155 = await TaexNFT1155.connect(owner).deploy(
+    taexNFT1155 = await upgrades.deployProxy(TaexNFT1155, [
       "ipfs://",
       primaryPrice,
       primaryArtistFee,
       secondaryArtistFee,
-      secondaryTaexFee
-    );
+      secondaryTaexFee,
+    ]);
 
     await saleNFT.connect(owner).addToWhitelist(taexNFT.target);
 
@@ -86,9 +90,9 @@ describe("SaleNFT", function () {
     const buyerInitialBalance = new BigNumber(
       await ethers.provider.getBalance(buyer.address)
     );
-    const tx = await saleNFT
-      .connect(buyer)
-      .primarySale(taexNFT.target, 1, { value: ethers.parseEther("1.2") });
+    const tx = await saleNFT.connect(buyer).primarySale(taexNFT.target, 1, {
+      value: ethers.parseEther("1.2"),
+    });
     await tx.wait();
 
     const expectedArtistFee = new BigNumber(primaryPrice)
@@ -129,9 +133,9 @@ describe("SaleNFT", function () {
 
   it("should fail if the token is not listed for sale", async function () {
     await expect(
-      saleNFT
-        .connect(buyer)
-        .secondarySale(taexNFT.target, 1, { value: ethers.parseEther("1.2") })
+      saleNFT.connect(buyer).secondarySale(taexNFT.target, 1, {
+        value: ethers.parseEther("1.2"),
+      })
     ).to.be.revertedWithCustomError(saleNFT, "NotListedForSale");
   });
 
@@ -178,7 +182,9 @@ describe("SaleNFT", function () {
     expect(finalArtistBalance.minus(initialArtistBalance)).to.equal(
       artistFeeAmount
     );
-    expect(finalTaexBalance.minus(initialTaexBalance)).to.equal(taexFeeAmount);
+    expect(finalTaexBalance.minus(initialTaexBalance)).to.equal(
+      taexFeeAmount
+    );
     expect(finalSellerBalance.minus(initialSellerBalance)).to.equal(
       sellerAmount
     );
@@ -221,7 +227,9 @@ describe("SaleNFT", function () {
         .multipliedBy(secondaryArtistFee)
         .div(100)
         .plus(
-          new BigNumber(primaryPrice).multipliedBy(secondaryTaexFee).div(100)
+          new BigNumber(primaryPrice)
+            .multipliedBy(secondaryTaexFee)
+            .div(100)
         )
     );
 
@@ -235,16 +243,18 @@ describe("SaleNFT", function () {
 
   it("should maintain ownership after a failed sale", async function () {
     await expect(
-      saleNFT
-        .connect(buyer)
-        .primarySale(taexNFT.target, 1, { value: ethers.parseEther("0.9") }) // Should fail
+      saleNFT.connect(buyer).primarySale(taexNFT.target, 1, {
+        value: ethers.parseEther("0.9"),
+      }) // Should fail
     ).to.be.revertedWithCustomError(saleNFT, "InsufficientAmount");
     expect(await taexNFT.ownerOfToken(1)).to.equal(owner.address); // Ensure ownership hasn't changed
   });
 
   it("should allow ownership transfer after listing for sale", async function () {
     await taexNFT.connect(owner).listForSale(1, primaryPrice);
-    await taexNFT.connect(owner).transferFrom(owner.address, user2.address, 1);
+    await taexNFT
+      .connect(owner)
+      .transferFrom(owner.address, user2.address, 1);
 
     expect(await taexNFT.ownerOfToken(1)).to.equal(user2.address);
   });
