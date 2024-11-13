@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20; // Ensure you're using the latest compatible version
+pragma solidity 0.8.25; 
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardTransientUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
@@ -15,10 +15,16 @@ contract SaleNFT is
     ReentrancyGuardTransientUpgradeable,
     ISaleNFT
 {
+    /// @notice Address of the artist treasury
     address public artistTreasury;
+    /// @notice Address of the Taex treasury
     address public taexTreasury;
+    /// @notice Mapping of whitelisted NFT contracts
     mapping(address => bool) public whitelist;
 
+    /**
+     * @notice modifier to check if the NFT contract is whitelisted.
+     */
     modifier onlyWhitelisted(address _taexNFT) {
         if (!whitelist[_taexNFT]) revert NotWhitelistedNFT();
         _;
@@ -29,6 +35,11 @@ contract SaleNFT is
         _disableInitializers();
     }
 
+    /**
+     * @notice Initializes the contract with the artist and Taex treasuries.
+     * @param _artistTreasury The address of the artist treasury.
+     * @param _taexTreasury  The address of the Taex treasury.
+     */
     function initialize(
         address _artistTreasury,
         address _taexTreasury
@@ -56,11 +67,6 @@ contract SaleNFT is
 
         // Transfer NFT to buyer
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
-
-        if (ITaexNFT(_taexNFT).ownerOfToken(_tokenId) != msg.sender) {
-            // TODO likely unneeded check if the transferFrom function is implemented correctly
-            revert TransferNFTFailed();
-        }
 
         // Calculate fees
         uint256 artistFeeAmount = (price * primaryArtistFee) / 100;
@@ -103,18 +109,15 @@ contract SaleNFT is
             uint8 secondaryTaexFee,
             uint256 price
         ) = ITaexNFT(_taexNFT).tokenData(_tokenId);
+        // Ensure token is listed for sale
+        if (!isListed) revert NotListedForSale(); 
+        // Validate payment
+        if (msg.value < price) revert InsufficientAmount(); 
+        
         address owner = ITaexNFT(_taexNFT).ownerOfToken(_tokenId);
-
-        if (!isListed) revert NotListedForSale(); // Ensure token is listed for sale
-        if (msg.value < price) revert InsufficientAmount(); // Validate payment
 
         // Transfer NFT to buyer
         ITaexNFT(_taexNFT).transferFrom(owner, msg.sender, _tokenId);
-
-        if (ITaexNFT(_taexNFT).ownerOfToken(_tokenId) != msg.sender) {
-            // TODO check is not needed if the transferFrom function is implemented correctly
-            revert TransferNFTFailed();
-        }
 
         // Calculate fees
         uint256 artistFeeAmount = (price * secondaryArtistFee) / 100;
@@ -202,16 +205,12 @@ contract SaleNFT is
         emit RemoveFromWhitelist(_contract);
     }
 
-    function _handleNativeTransfers(
-        address[] memory _to,
-        uint256[] memory _amount,
-        bytes4[] memory _errorSelector
-    ) internal {
-        for (uint256 i = 0; i < _to.length; i++) {
-            _transferNativeWithError(_to[i], _amount[i], _errorSelector[i]);
-        }
-    }
-
+    /**
+     * Function used to transfer ETH to a specified address. And emit a specified error if the transfer fails.
+     * @param _to The address for eth transfer
+     * @param _amount The amount of eth to transfer 
+     * @param _errorSelector The error to emit if the transfer fails
+     */
     function _transferNativeWithError(
         address _to,
         uint256 _amount,

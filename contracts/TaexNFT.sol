@@ -16,33 +16,49 @@ contract TaexNFT is
     ReentrancyGuardTransientUpgradeable,
     ITaexNFT
 {
-    /// TODO natspec
-    uint256 private _lastTokenId; // Last minted token ID
-    /// TODO natspec
-    string public internalBaseURI; // Base URI for metadata
+    /// @notice Last minted token ID
+    uint256 private _lastTokenId;
+    /// Base URI for metadata
+    string public internalBaseURI; 
 
-    /// TODO natspec
+     /**
+     * @notice Represents the data of a token.
+     * @param isListedForSale Indicates if the token is listed for sale
+     * @param primaryArtistFee Primary artist fee percentage
+     * @param secondaryArtistFee Secondary artist fee percentage
+     * @param secondaryTaexFee Secondary Taex fee percentage
+     * @param price Sale price of the token
+     */
     struct TokenData {
-        bool isListedForSale; // Indicates if the token is listed for sale
-        uint8 primaryArtistFee; // Primary artist fee percentage
-        uint8 secondaryArtistFee; // Secondary artist fee percentage
-        uint8 secondaryTaexFee; // Secondary Taex fee percentage
-        uint256 price; // Sale price of the token
+        bool isListedForSale; 
+        uint8 primaryArtistFee; 
+        uint8 secondaryArtistFee; 
+        uint8 secondaryTaexFee; 
+        uint256 price; 
     }
 
     /// Mapping of token ID to its data
     mapping(uint256 => TokenData) public tokenData;
 
+    /**
+     * @notice Modifier that is used to check if the address is not zero.
+     */
     modifier isNotZeroAddress(address _address) {
-        require(_address != address(0), "Zero address not allowed");
+        if (_address == address(0)) revert ZeroAddress();
         _;
     }
 
+    /**
+     * @notice Modifier that is used to check if the amount is not zero.
+     */
     modifier isNotZero(uint256 _amount) {
-        require(_amount > 0, "Amount cannot be zero");
+        if (_amount == 0) revert ZeroAmount();
         _;
     }
 
+    /**
+     * @notice Modifier that is used to check if the percentage is valid.
+     */
     modifier isValidFeePercentage(uint256 _percentage) {
         if (_percentage > 100) revert InvalidFeePercentage();
         _;
@@ -82,7 +98,10 @@ contract TaexNFT is
         __Ownable_init(msg.sender);
 
         internalBaseURI = _uri;
-        tokenData[0].price = _primaryPrice; // Default primary price for future tokens
+        /**
+         * @notice Default primary price for future tokens
+         */
+        tokenData[0].price = _primaryPrice; 
         tokenData[0].primaryArtistFee = _primaryArtistFee;
         tokenData[0].secondaryArtistFee = _secondaryArtistFee;
         tokenData[0].secondaryTaexFee = _secondaryTaexFee;
@@ -96,6 +115,7 @@ contract TaexNFT is
     function ownerOfToken(uint256 _tokenId) external view returns (address) {
         return ownerOf(_tokenId);
     }
+
 
     /**
      * @dev Overrides the transferFrom function to ensure proper checks are made.
@@ -141,6 +161,7 @@ contract TaexNFT is
      */
     function adjustPrice(uint256 _tokenId, uint256 _price) external {
         if (ownerOf(_tokenId) != msg.sender) revert NotOwnerOfTokenId();
+        if (_price == tokenData[_tokenId].price) revert NewPriceMustBeDifferent();
 
         tokenData[_tokenId].price = _price;
 
@@ -247,7 +268,12 @@ contract TaexNFT is
         uint8 _primaryArtistFee,
         uint8 _secondaryArtistFee,
         uint8 _secondaryTaexFee
-    ) external isNotZero(_price) onlyOwner {
+    )
+        external
+        isValidFeePercentage(_primaryArtistFee)
+        isValidFeePercentage(_secondaryArtistFee + _secondaryTaexFee)
+        isNotZero(_price)
+    {
         tokenData[0].price = _price;
         tokenData[0].primaryArtistFee = _primaryArtistFee;
         tokenData[0].secondaryArtistFee = _secondaryArtistFee;
